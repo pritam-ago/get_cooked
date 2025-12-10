@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(tokenData, { status: 400 });
   }
 
-  const res = NextResponse.redirect("http://localhost:3000/roast");
+  const res = NextResponse.redirect("https://getcooked.vercel.app/roast");
 
   // Save tokens in httpOnly cookies
   res.cookies.set("spotify_access_token", tokenData.access_token, {
