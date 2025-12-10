@@ -7,7 +7,6 @@ type Roast = {
   title: string;
   text: string;
   memeTag: string;
-  vibeEmoji: string;
 };
 
 type RoastResponse = {
@@ -140,10 +139,9 @@ export default function RoastPage() {
             >
               <div className="flex items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">{current.vibeEmoji || "🔥"}</span>
                   <div className="text-left">
                     <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
-                      roast #{index + 1} of {roasts.length}
+                      #{index + 1} of {roasts.length}
                     </p>
                     <h2 className="text-lg md:text-xl font-semibold">
                       {current.title}
