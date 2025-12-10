@@ -1,25 +1,38 @@
 // app/api/roast/route.ts
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import {
   fetchSpotifyProfile,
   fetchTopArtists,
   fetchTopTracks,
   fetchRecentlyPlayed,
   fetchPlaylists,
-} from "../../lib/spotify";
+} from "@/app/lib/spotify";
 import { GoogleGenAI } from "@google/genai";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-if (!GEMINI_API_KEY) {
-  console.warn("⚠️ GEMINI_API_KEY is not set");
-}
-
-const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+const ai = new GoogleGenAI({
+  apiKey: GEMINI_API_KEY,
+});
 
 export async function GET() {
   try {
-    // 1. Fetch Spotify stuff in parallel
+    console.log("🔥 /api/roast hit");
+
+    const store = await cookies();
+    const token = store.get("spotify_access_token")?.value;
+
+    console.log("🍪 spotify_access_token =", token ? "FOUND" : "MISSING");
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "Missing Spotify access token cookie" },
+        { status: 401 }
+      );
+    }
+
+    // Fetch Spotify data
     const [profile, topArtists, topTracks, recent, playlists] = await Promise.all([
       fetchSpotifyProfile(),
       fetchTopArtists(),
@@ -30,106 +43,72 @@ export async function GET() {
 
     const profileName = profile?.display_name ?? "this user";
 
-    // 2. Prepare compact summaries
-    const topArtistNames: string[] =
-      topArtists?.items?.map((a: any) => a.name).slice(0, 10) ?? [];
+    const topArtistNames = topArtists?.items?.map((a: any) => a.name) ?? [];
+    const topTrackNames = topTracks?.items?.map(
+      (t: any) => `${t.name} – ${t.artists?.[0]?.name ?? "Unknown"}`
+    ) ?? [];
+    const recentTrackNames = recent?.items?.map(
+      (i: any) => `${i.track?.name} – ${i.track?.artists?.[0]?.name}`
+    ) ?? [];
+    const playlistNames = playlists?.items?.map((p: any) => p.name) ?? [];
 
-    const topTrackNames: string[] =
-      topTracks?.items
-        ?.slice(0, 10)
-        .map(
-          (t: any) =>
-            `${t.name} – ${t.artists?.[0]?.name ?? "Unknown"}`
-        ) ?? [];
-
-    const recentTrackNames: string[] =
-      recent?.items
-        ?.slice(0, 15)
-        .map(
-          (item: any) =>
-            `${item.track?.name ?? "Unknown"} – ${
-              item.track?.artists?.[0]?.name ?? "Unknown"
-            }`
-        ) ?? [];
-
-    const playlistNames: string[] =
-      playlists?.items?.map((p: any) => p.name).slice(0, 10) ?? [];
-
+    // Vibe guess
     const vibeGuess = (() => {
-      const artistsStr = topArtistNames.join(" ").toLowerCase();
-      if (artistsStr.includes("taylor")) return "heartbreak pop, delulu main character arc";
-      if (artistsStr.includes("weeknd")) return "late night neon city with unresolved issues";
-      if (artistsStr.includes("arijit") || artistsStr.includes("darshan")) {
-        return "bollywood romantic + sad boy/girl core";
-      }
-      if (artistsStr.includes("drake") || artistsStr.includes("travis")) {
-        return "rap / trap gym bro trying to be sigma";
-      }
-      return "mixed bag of Spotify-core, nostalgia, and algorithm leftovers";
+      const a = topArtistNames.join(" ").toLowerCase();
+      if (a.includes("taylor")) return "heartbreak pop, delulu main character arc";
+      if (a.includes("weeknd")) return "neon nightwalker energy";
+      if (a.includes("arijit")) return "bollywood sadboi/girl energy";
+      if (a.includes("drake")) return "wannabe sigma gym-bro playlist";
+      return "spotify-core chaos with nostalgia sprinkles";
     })();
 
-    // 3. Build Gemini prompt – ask for JSON
+    // Gemini prompt
     const prompt = `
-You are a savage but SAFE roast bot. You brutally roast a user's music taste
-based on their Spotify data. Rules:
-- NO slurs, hate speech, or attacking protected groups.
-- Only roast their music taste and light personality stereotypes.
-- Tone: chaotic Gen-Z, meme-heavy, like viral Twitter / Instagram / TikTok captions.
+You are a savage but SAFE roast bot. Roast the user's Spotify taste.
+NO hate speech or slurs. Only roast their music taste.
 
-User display name: ${profileName}
+User: ${profileName}
 
-Top artists:
-${topArtistNames.join(", ") || "none"}
+Top artists: ${topArtistNames.join(", ")}
+Top tracks: ${topTrackNames.join("; ")}
+Recently played: ${recentTrackNames.join("; ")}
+Playlists: ${playlistNames.join(", ")}
+Vibe guess: ${vibeGuess}
 
-Top tracks:
-${topTrackNames.join("; ") || "none"}
-
-Recently played:
-${recentTrackNames.join("; ") || "none"}
-
-Playlists:
-${playlistNames.join(", ") || "none"}
-
-Your guess of their vibe:
-${vibeGuess}
-
-Now generate EXACTLY 5 roasts.
-
-Return JSON ONLY in this exact format:
+Return EXACTLY this JSON format:
 
 {
   "roasts": [
     {
-      "title": "short spicy title",
-      "text": "2-4 sentence roast, very funny, refer to specific artists/songs if possible.",
-      "memeTag": "short meme-style label like 'delulu swiftie', '2016 tumblr survivor'",
-      "vibeEmoji": "one or two emojis that match the vibe"
-    },
-    ...
+      "title": "...",
+      "text": "...",
+      "memeTag": "...",
+      "vibeEmoji": "..."
+    }
   ]
 }
-
-No explanations, no extra text, just valid JSON.
 `;
 
-    const response = await ai.models.generateContent({
+    // Gemini call
+    const result = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: prompt,
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
-    const rawText = response.text;
-    let parsed: any;
+    const rawText =
+      result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";
 
+    let parsed;
     try {
-      parsed = JSON.parse(rawText || "{}");
-    } catch (e) {
-      // if JSON parsing fails, fallback to 1 big roast
+      parsed = JSON.parse(rawText);
+    } catch {
+      console.log("❌ BAD JSON FROM GEMINI:", rawText);
       parsed = {
         roasts: [
           {
-            title: "Gemini had a meltdown",
+            title: "AI Glitched",
             text: rawText,
-            memeTag: "ai_scuffed",
+            memeTag: "gemini_melted",
             vibeEmoji: "🤖🔥",
           },
         ],
@@ -147,10 +126,10 @@ No explanations, no extra text, just valid JSON.
         vibeGuess,
       },
     });
-  } catch (error: any) {
-    console.error("Roast API error:", error);
+  } catch (err: any) {
+    console.error("🔥 Roast API error:", err);
     return NextResponse.json(
-      { error: "Failed to generate roast", details: error?.message },
+      { error: "Failed to generate roast", details: err?.message },
       { status: 500 }
     );
   }
