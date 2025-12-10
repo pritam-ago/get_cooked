@@ -72,6 +72,19 @@ export default function RoastPage() {
   if (error || !roasts.length) {
     return (
       <main className="min-h-screen bg-black text-white flex items-center justify-center px-6">
+        {/* Logout Button */}
+<div className="absolute top-6 right-6">
+  <button
+    onClick={() => {
+      localStorage.clear();
+      window.location.href = "/api/auth/logout";
+    }}
+    className="px-4 py-1.5 rounded-full border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 hover:border-green-500 hover:text-green-400 text-xs md:text-sm transition font-medium"
+  >
+    logout
+  </button>
+</div>
+
         <div className="max-w-md text-center space-y-4">
           <h1 className="text-3xl font-bold">uh oh.</h1>
           <p className="text-gray-400 text-sm">
@@ -86,15 +99,6 @@ export default function RoastPage() {
           >
             Go back home
           </button>
-          <button
-  onClick={() => {
-    localStorage.clear();            // clear browser session
-    window.location.href = "/api/auth/logout"; // clears cookies too
-  }}
-  className="text-xs text-red-400 underline mt-4"
->
-  Force Re-Login
-</button>
 
         </div>
       </main>
@@ -105,6 +109,19 @@ export default function RoastPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-black text-white flex items-center justify-center px-4 py-10">
+      {/* Logout Button */}
+<div className="absolute top-6 right-6">
+  <button
+    onClick={() => {
+      localStorage.clear();
+      window.location.href = "/api/auth/logout";
+    }}
+    className="px-4 py-1.5 rounded-full border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 hover:border-green-500 hover:text-green-400 text-xs md:text-sm transition font-medium"
+  >
+    logout
+  </button>
+</div>
+
       <div className="w-full max-w-3xl space-y-8">
         {/* Header */}
         <div className="text-center space-y-2">
