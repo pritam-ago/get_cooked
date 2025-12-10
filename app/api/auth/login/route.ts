@@ -12,7 +12,14 @@ const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI!;
 export async function GET() {
   const state = crypto.randomBytes(16).toString("hex");
 
-  const scope = 'user-read-private user-read-email';
+  const scope = [
+  "user-read-recently-played",
+  "user-top-read",
+  "playlist-read-private",
+  "user-library-read",
+  "user-read-email"
+  ].join(" ");
+
 
   const params = new URLSearchParams({
     response_type: "code",
