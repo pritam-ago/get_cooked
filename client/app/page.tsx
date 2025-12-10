@@ -33,7 +33,7 @@ export default function Home() {
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.4 }}
-          onClick={() => (window.location.href = "/api/auth/spotify")}
+          onClick={() => (window.location.href = "/api/auth/login")}
           className="
             bg-green-500 text-black font-semibold px-6 py-3 rounded-full 
             text-lg shadow-xl hover:bg-green-400 transition-all
