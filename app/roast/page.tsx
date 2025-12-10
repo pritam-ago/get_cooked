@@ -87,6 +87,16 @@ export default function RoastPage() {
           >
             Go back home
           </button>
+          <button
+  onClick={() => {
+    localStorage.clear();            // clear browser session
+    window.location.href = "/api/auth/logout"; // clears cookies too
+  }}
+  className="text-xs text-red-400 underline mt-4"
+>
+  Force Re-Login
+</button>
+
         </div>
       </main>
     );
