@@ -101,7 +101,7 @@ Return RAW JSON only.
 
     /** 5️⃣ GEMINI CALL */
     const result = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
